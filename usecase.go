@@ -26,6 +26,10 @@ func (e *eventUsesace) AddNewEvent(ctx context.Context, ev CreateEvent) (string,
 	return e.ea.Create(ctx, ev)
 }
 
+func (e *eventUsesace) Find(ctx context.Context, f FindEventsFilters) ([]*Event, error) {
+	return e.ea.Find(ctx, f)
+}
+
 func (e *eventUsesace) ConfirmFailed(ctx context.Context, ev *FailedEvent) error {
 	const op = "outbox.usecase.ConfirmFailed"
 

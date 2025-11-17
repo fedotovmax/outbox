@@ -5,6 +5,8 @@ import (
 	"time"
 )
 
+type FindEventsFilters struct{}
+
 type CreateEvent struct {
 	AggregateID string
 	Topic       string

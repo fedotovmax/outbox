@@ -61,5 +61,6 @@ ob := outbox.New(logger, producer, txManager, extractor, config)
 | Метод         | Сигнатура                                                          | Описание                                                    |
 | ------------- | ------------------------------------------------------------------ | ----------------------------------------------------------- |
 | `AddNewEvent` | `AddNewEvent(ctx context.Context, ev CreateEvent) (string, error)` | Добавление нового события в таблицу Outbox                  |
+| `Find`        | `Find(ctx context.Context, f FindEventsFilters) ([]*Event, error)` | Поиск событий с фильтрацией                                 |
 | `Start`       | `Start()`                                                          | Запуск обработки событий                                    |
 | `Stop`        | `Stop(ctx context.Context) error`                                  | Остановка обработки с ожиданием завершения текущих операций |

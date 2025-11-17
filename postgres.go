@@ -18,6 +18,11 @@ func newEventPostgres(ex pgxtx.Extractor) *eventPostgres {
 	}
 }
 
+// TODO:implement
+func (p *eventPostgres) Find(ctx context.Context, f FindEventsFilters) ([]*Event, error) {
+	return nil, nil
+}
+
 func (p *eventPostgres) FindNewAndNotReserved(ctx context.Context, limit int) ([]*Event, error) {
 	const op = "outbox.FindNewAndNotReserved"
 

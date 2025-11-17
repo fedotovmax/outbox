@@ -80,6 +80,10 @@ func (a *Outbox) AddNewEvent(ctx context.Context, ev CreateEvent) (string, error
 	return a.usecase.AddNewEvent(ctx, ev)
 }
 
+func (a *Outbox) Find(ctx context.Context, f FindEventsFilters) ([]*Event, error) {
+	return a.usecase.Find(ctx, f)
+}
+
 func (a *Outbox) successesMonitoring(wg *sync.WaitGroup) {
 	const op = "outbox.app.successesMonitoring"
 
@@ -100,7 +104,7 @@ func (a *Outbox) successesMonitoring(wg *sync.WaitGroup) {
 					log.Info("monitoring [successes] stopped: channel closed")
 					return
 				}
-				err := a.confirm(a.ctx, event)
+				err := a.confirm(event)
 				if err != nil {
 					log.Error("error when confirm event, but event is sended",
 						slog.String("error", err.Error()))
@@ -135,7 +139,7 @@ func (a *Outbox) errorsMonitoring(wg *sync.WaitGroup) {
 				log.Error("event send failed",
 					slog.String("event_id", event.ID), slog.String("error", event.Error.Error()))
 
-				err := a.fail(a.ctx, event)
+				err := a.fail(event)
 
 				if err != nil {
 					log.Error("error when confirm send fail", slog.String("error", err.Error()))
@@ -145,10 +149,10 @@ func (a *Outbox) errorsMonitoring(wg *sync.WaitGroup) {
 	}()
 }
 
-func (a *Outbox) fail(ctx context.Context, ev *FailedEvent) error {
+func (a *Outbox) fail(ev *FailedEvent) error {
 	const op = "outbox.app.fail"
 
-	queriesCtx, cancelQueriesCtx := context.WithTimeout(ctx, a.cfg.ProcessTimeout)
+	queriesCtx, cancelQueriesCtx := context.WithTimeout(a.ctx, a.cfg.ProcessTimeout)
 	defer cancelQueriesCtx()
 
 	err := a.usecase.ConfirmFailed(queriesCtx, ev)
@@ -160,11 +164,11 @@ func (a *Outbox) fail(ctx context.Context, ev *FailedEvent) error {
 	return nil
 }
 
-func (a *Outbox) confirm(ctx context.Context, ev *SuccessEvent) error {
+func (a *Outbox) confirm(ev *SuccessEvent) error {
 
 	const op = "outbox.app.confirm"
 
-	queriesCtx, cancelQueriesCtx := context.WithTimeout(ctx, a.cfg.ProcessTimeout)
+	queriesCtx, cancelQueriesCtx := context.WithTimeout(a.ctx, a.cfg.ProcessTimeout)
 	defer cancelQueriesCtx()
 
 	err := a.usecase.ConfirmEvent(queriesCtx, ev)
@@ -196,20 +200,20 @@ func (a *Outbox) processingNewEvents(wg *sync.WaitGroup) {
 				if !atomic.CompareAndSwapInt32(&a.inProcess, 0, 1) {
 					continue
 				}
-				a.process(a.ctx)
+				a.process()
 				atomic.StoreInt32(&a.inProcess, 0)
 			}
 		}
 	}()
 }
 
-func (a *Outbox) process(ctx context.Context) {
+func (a *Outbox) process() {
 
 	const op = "outbox.app.process"
 
 	log := slog.With(slog.String("op", op))
 
-	queriesCtx, cancelQueriesCtx := context.WithTimeout(ctx, a.cfg.ProcessTimeout)
+	queriesCtx, cancelQueriesCtx := context.WithTimeout(a.ctx, a.cfg.ProcessTimeout)
 	defer cancelQueriesCtx()
 
 	events, err := a.usecase.ReserveNewEvents(queriesCtx, a.cfg.Limit, a.cfg.ReserveDuration)
@@ -229,7 +233,7 @@ func (a *Outbox) process(ctx context.Context) {
 	}
 	close(eventsCh)
 
-	workerPoolCtx, workerPoolCtxCancel := context.WithCancel(ctx)
+	workerPoolCtx, workerPoolCtxCancel := context.WithCancel(a.ctx)
 	defer workerPoolCtxCancel()
 
 	publishResults := workerpool.Workerpool(workerPoolCtx, eventsCh, a.cfg.Workers,
