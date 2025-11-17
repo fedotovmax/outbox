@@ -41,9 +41,19 @@ func (p *produceKafka) Publish(ctx context.Context, ev *Event) error {
 	}
 
 	msg := &sarama.ProducerMessage{
-		Topic:    ev.Topic,
-		Key:      sarama.StringEncoder(ev.AggregateID),
-		Value:    sarama.ByteEncoder(ev.Payload),
+		Topic: ev.Topic,
+		Key:   sarama.StringEncoder(ev.AggregateID),
+		Value: sarama.ByteEncoder(ev.Payload),
+		Headers: []sarama.RecordHeader{
+			{
+				Key:   []byte("event_id"),
+				Value: []byte(ev.ID),
+			},
+			{
+				Key:   []byte("event_type"),
+				Value: []byte(ev.Type),
+			},
+		},
 		Metadata: metadata,
 	}
 
