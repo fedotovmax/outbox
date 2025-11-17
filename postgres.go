@@ -20,11 +20,13 @@ func newEventPostgres(ex pgxtx.Extractor) *eventPostgres {
 
 // TODO:implement
 func (p *eventPostgres) Find(ctx context.Context, f FindEventsFilters) ([]*Event, error) {
+	const op = "outbox.postgres.Find"
+
 	return nil, nil
 }
 
 func (p *eventPostgres) FindNewAndNotReserved(ctx context.Context, limit int) ([]*Event, error) {
-	const op = "outbox.FindNewAndNotReserved"
+	const op = "outbox.postgres.FindNewAndNotReserved"
 
 	tx := p.ex.ExtractTx(ctx)
 
@@ -69,7 +71,7 @@ func (p *eventPostgres) FindNewAndNotReserved(ctx context.Context, limit int) ([
 }
 
 func (p *eventPostgres) Create(ctx context.Context, d CreateEvent) (string, error) {
-	const op = "outbox.CreateEvent"
+	const op = "outbox.postgres.CreateEvent"
 
 	tx := p.ex.ExtractTx(ctx)
 
@@ -91,13 +93,13 @@ func (p *eventPostgres) Create(ctx context.Context, d CreateEvent) (string, erro
 
 func (p *eventPostgres) RemoveReserve(ctx context.Context, id string) error {
 
-	const op = "outbox.RemoveReserve"
+	const op = "outbox.postgres.RemoveReserve"
 
-	const sql = "update events set status = $1 where id = $2;"
+	const sql = "update events set reserved_to = null where id = $1;"
 
 	tx := p.ex.ExtractTx(ctx)
 
-	result, err := tx.Exec(ctx, sql, EventStatusDone, id)
+	result, err := tx.Exec(ctx, sql, id)
 
 	if err != nil {
 		return fmt.Errorf("%s: %w: %v", op, ErrInternal, err)
@@ -112,8 +114,8 @@ func (p *eventPostgres) RemoveReserve(ctx context.Context, id string) error {
 	return nil
 }
 
-func (p *eventPostgres) ChangeStatus(ctx context.Context, id string) error {
-	const op = "outbox.ChangeStatus"
+func (p *eventPostgres) SetStatusDone(ctx context.Context, id string) error {
+	const op = "outbox.postgres.ChangeStatus"
 
 	const sql = "update events set status = $1 where id = $2;"
 
@@ -136,7 +138,7 @@ func (p *eventPostgres) ChangeStatus(ctx context.Context, id string) error {
 
 func (p *eventPostgres) SetReservedToByIDs(ctx context.Context, ids []string, dur time.Duration) error {
 
-	const op = "outbox.SetReservedToByIds"
+	const op = "outbox.postgres.SetReservedToByIds"
 
 	reservedTo := time.Now().Add(dur)
 

@@ -63,7 +63,7 @@ func (e *eventUsesace) ConfirmEvent(ctx context.Context, ev *SuccessEvent) error
 			return err
 		}
 
-		err = e.ea.ChangeStatus(txCtx, ev.ID)
+		err = e.ea.SetStatusDone(txCtx, ev.ID)
 
 		if err != nil {
 			return err

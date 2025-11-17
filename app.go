@@ -14,11 +14,10 @@ import (
 )
 
 type Outbox struct {
-	kafka   *produceKafka
-	usecase *eventUsesace
-	log     *slog.Logger
-	cfg     Config
-	// flag for
+	kafka     *produceKafka
+	usecase   *eventUsesace
+	log       *slog.Logger
+	cfg       Config
 	inProcess int32
 	ctx       context.Context
 	stop      context.CancelFunc
@@ -184,7 +183,7 @@ func (a *Outbox) confirm(ev *SuccessEvent) error {
 func (a *Outbox) processingNewEvents(wg *sync.WaitGroup) {
 	const op = "outbox.app.processingNewEvents"
 
-	log := slog.With(slog.String("op", op))
+	log := a.log.With(slog.String("op", op))
 
 	wg.Add(1)
 	go func() {
