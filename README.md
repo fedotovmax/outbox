@@ -2,6 +2,10 @@
 
 Пакет реализует паттерн Outbox для обеспечения надежной доставки событий через Kafka с использованием Postgres в качестве хранилища.
 
+# Download
+
+go get -u github.com/fedotovmax/outbox@{version}
+
 ## Поддерживаемые драйверы
 
 - Kafka — [Sarama](https://github.com/IBM/sarama)
