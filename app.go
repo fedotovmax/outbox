@@ -211,7 +211,7 @@ func (a *Outbox) process() {
 
 	const op = "outbox.app.process"
 
-	log := slog.With(slog.String("op", op))
+	log := a.log.With(slog.String("op", op))
 
 	queriesCtx, cancelQueriesCtx := context.WithTimeout(a.ctx, a.cfg.ProcessTimeout)
 	defer cancelQueriesCtx()
