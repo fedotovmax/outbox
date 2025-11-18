@@ -9,12 +9,13 @@ import (
 type Config struct {
 	// Limit of events to receive, min = 1, Max = 100
 	Limit int
-	// Min = 1, Max = 10
-	Workers  int
+	// Num of workers for publish events, min = 1, max = 10
+	Workers int
+	// Event processing interval, min = 5s
 	Interval time.Duration
-	// Event reserve duration
+	// Event reserve duration, min = 2m
 	ReserveDuration time.Duration
-	// Timeout for methods process, confirmSuccess, confirmFailed
+	// Timeout for processing method, min = 1100 ms
 	ProcessTimeout time.Duration
 }
 
@@ -25,7 +26,7 @@ func validateConfig(cfg *Config) error {
 		minLimit          = 1
 		maxLimit          = 100
 		minInterval       = 5 * time.Second
-		minReserve        = 25 * time.Second
+		minReserve        = 2 * time.Minute
 		minProcessTimeout = 1100 * time.Millisecond
 	)
 
