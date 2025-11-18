@@ -1,6 +1,10 @@
 package outbox
 
-import "time"
+import (
+	"fmt"
+	"strings"
+	"time"
+)
 
 type Config struct {
 	// Limit of events to receive, min = 1, Max = 100
@@ -14,44 +18,42 @@ type Config struct {
 	ProcessTimeout time.Duration
 }
 
-func validateConfig(cfg *Config) {
-	const minWorkers = 1
-	const maxWorkers = 10
+func validateConfig(cfg *Config) error {
+	const (
+		minWorkers        = 1
+		maxWorkers        = 10
+		minLimit          = 1
+		maxLimit          = 100
+		minInterval       = 5 * time.Second
+		minReserve        = 25 * time.Second
+		minProcessTimeout = 1100 * time.Millisecond
+	)
 
-	const minLimit = 1
-	const maxLimit = 100
+	var errs []string
 
-	const minInterval = time.Second * 5
-
-	const minReserve = time.Second * 25
-
-	const minProcessTimeout = time.Millisecond * 1100
-
-	if cfg.Workers < minWorkers {
-		cfg.Workers = minWorkers
+	if cfg.Workers < minWorkers || cfg.Workers > maxWorkers {
+		errs = append(errs, fmt.Sprintf("workers must be in [%d;%d]", minWorkers, maxWorkers))
 	}
 
-	if cfg.Workers > maxWorkers {
-		cfg.Workers = maxWorkers
-	}
-
-	if cfg.Limit < minLimit {
-		cfg.Limit = minLimit
-	}
-
-	if cfg.Limit > maxLimit {
-		cfg.Limit = maxLimit
+	if cfg.Limit < minLimit || cfg.Limit > maxLimit {
+		errs = append(errs, fmt.Sprintf("limit must be in [%d;%d]", minLimit, maxLimit))
 	}
 
 	if cfg.Interval < minInterval {
-		cfg.Interval = minInterval
+		errs = append(errs, fmt.Sprintf("interval must be >= %s", minInterval))
 	}
 
 	if cfg.ReserveDuration < minReserve {
-		cfg.ReserveDuration = minReserve
+		errs = append(errs, fmt.Sprintf("reserveDuration must be >= %s", minReserve))
 	}
 
 	if cfg.ProcessTimeout < minProcessTimeout {
-		cfg.ProcessTimeout = minProcessTimeout
+		errs = append(errs, fmt.Sprintf("processTimeout must be >= %s", minProcessTimeout))
 	}
+
+	if len(errs) > 0 {
+		return fmt.Errorf("invalid config:\n - %s", strings.Join(errs, "\n - "))
+	}
+
+	return nil
 }

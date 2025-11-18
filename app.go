@@ -13,6 +13,11 @@ import (
 	"github.com/fedotovmax/workerpool"
 )
 
+type EventSender interface {
+	AddNewEvent(ctx context.Context, ev CreateEvent) (string, error)
+	Find(ctx context.Context, f FindEventsFilters) ([]*Event, error)
+}
+
 type Outbox struct {
 	kafka     *produceKafka
 	usecase   *eventUsesace
@@ -24,11 +29,15 @@ type Outbox struct {
 	isStopped chan struct{}
 }
 
-func New(l *slog.Logger, p Producer, txm pgxtx.Manager, ex pgxtx.Extractor, cfg Config) *Outbox {
+func New(l *slog.Logger, p Producer, txm pgxtx.Manager, ex pgxtx.Extractor, cfg Config) (*Outbox, error) {
+
+	err := validateConfig(&cfg)
+
+	if err != nil {
+		return nil, err
+	}
 
 	ctx, cancel := context.WithCancel(context.Background())
-
-	validateConfig(&cfg)
 
 	kafka := newProduceKafka(p)
 
@@ -44,7 +53,11 @@ func New(l *slog.Logger, p Producer, txm pgxtx.Manager, ex pgxtx.Extractor, cfg 
 		ctx:       ctx,
 		stop:      cancel,
 		isStopped: make(chan struct{}),
-	}
+	}, nil
+}
+
+func (a *Outbox) GetEventSender() EventSender {
+	return a.usecase
 }
 
 func (a *Outbox) Start() {
@@ -73,14 +86,6 @@ func (a *Outbox) Stop(ctx context.Context) error {
 		log.Warn("Event Processor stopped by context")
 		return fmt.Errorf("%s: %w", op, ctx.Err())
 	}
-}
-
-func (a *Outbox) AddNewEvent(ctx context.Context, ev CreateEvent) (string, error) {
-	return a.usecase.AddNewEvent(ctx, ev)
-}
-
-func (a *Outbox) Find(ctx context.Context, f FindEventsFilters) ([]*Event, error) {
-	return a.usecase.Find(ctx, f)
 }
 
 func (a *Outbox) successesMonitoring(wg *sync.WaitGroup) {
